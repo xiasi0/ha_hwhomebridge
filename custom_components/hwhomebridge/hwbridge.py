@@ -13,7 +13,9 @@ hwbridge.py - 核心桥接逻辑
 """
 
 import os
+import shutil
 import asyncio
+import platform
 import psutil
 import socket
 import json
@@ -30,6 +32,7 @@ from homeassistant.const import (
 
 from .service_router import ServiceRouter
 from .pin_manager import PINManager
+from .const import SKIP_PLATFORMS
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -44,6 +47,9 @@ lib = None
 service_router = None  # ServiceRouter 实例（替代原来的 light_plt/fan_plt 等）
 
 hilink_bridge_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "hilink_bridge")
+# 运行时用户态目录，指向 HA 持久存储区 .storage/hwhomebridge/
+# C SDK (HILINK_CONFIG_DIR)、device_ac、new_device.txt 均落此目录
+hilink_config_dir = None
 hilink_cfg_files = ("bridge.cfg",
                      "bridge_bak.cfg",
                      "hilink_cert.cfg",
@@ -56,7 +62,8 @@ hilink_cfg_files = ("bridge.cfg",
                      "timer_bak.cfg")
 
 # 设备持久化（保存 device_id 而非 entity_id）
-saved_device_file = "new_device.txt"
+# 运行时在 start_hw_hilink_bridge 中拼接到 hilink_config_dir 下，避免污染 config 根目录
+saved_device_file = None
 registered_device_ids = set()  # 已注册到 HiLink 的 device_id 集合
 saved_device_ids = set()        # 从持久化文件恢复的 device_id 集合
 
@@ -88,15 +95,55 @@ async def start_hw_hilink_bridge(hass: HomeAssistant):
     else:
         _LOGGER.error("Failed to load product registry, device matching will not work")
 
-    # 加载 C 库
-    _LOGGER.info(f"Loading hilink bridge library from {hilink_bridge_path}")
-    os.environ['HILINK_CONFIG_DIR'] = './custom_components/hwhomebridge/hilink_bridge/config/'
-    dll = cdll.LoadLibrary
-    lib = dll(f"{hilink_bridge_path}/libhilink_bridge.so")
+    global hilink_config_dir, saved_device_file
+
+    hilink_config_dir = hass.config.path('.storage', 'hwhomebridge', 'config')
+
+    os.makedirs(hilink_config_dir, exist_ok=True)
+
+    # 将随插件发布的固定配置文件复制到运行时目录，C SDK 启动时需要这些文件
+    # 始终覆盖：升级后固定配置可能有更新
+    fixed_cfg_src_dir = os.path.join(hilink_bridge_path, 'config')
+    for fname in ('hilink.cfg', 'hilink_bak.cfg'):
+        src = os.path.join(fixed_cfg_src_dir, fname)
+        dst = os.path.join(hilink_config_dir, fname)
+        if os.path.exists(src):
+            shutil.copy2(src, dst)
+
+    os.environ['HILINK_CONFIG_DIR'] = hilink_config_dir + '/'
+    saved_device_file = os.path.join(hilink_config_dir, 'new_device.txt')
+    _LOGGER.info(f"hwhomebridge runtime dir: {hilink_config_dir}")
+
+    # 加载 C 库（按 CPU 架构选择对应的 so）
+    machine = platform.machine() or ""
+    arch = ""
+    if machine.lower() in ("x86_64", "amd64"):
+        arch = "amd64"
+    elif machine.lower() in ("aarch64", "arm64"):
+        arch = "aarch64"
+
+    if not arch:
+        _LOGGER.error(f"Unsupported CPU architecture: {machine}, bridge will not start")
+        return
+
+    so_path = os.path.join(hilink_bridge_path, "lib", arch, "libhilink_bridge.so")
+    if not os.path.exists(so_path):
+        _LOGGER.error(f"SO file not found: {so_path}, bridge will not start")
+        return
+
+    _LOGGER.info(f"Loading hilink bridge so: {so_path}")
+    try:
+        dll = cdll.LoadLibrary
+        lib = dll(so_path)
+    except Exception as e:
+        _LOGGER.error(f"Failed to load so {so_path}: {e}, bridge will not start")
+        return
     _LOGGER.info(f"open hilink bridge so success.")
 
     # 设置A_C（48字节随机字符串）
-    ac = os.urandom(48)
+    # 优先从 device_ac 文件读取已保存的 ac，避免每次启动重新生成
+    device_ac_file = os.path.join(hilink_config_dir, 'device_ac')
+    ac = _load_or_create_ac(device_ac_file)
     ac_value = (c_ubyte * 48)(*ac)
     lib.HILINK_SetAutoAc(ac_value, 48)
 
@@ -216,10 +263,10 @@ def stop_hw_hilink_bridge(hass: HomeAssistant):
     saved_device_ids.clear()
 
     # 删除持久化文件（与 OnBridgeStatusCB devStatus==9 路径一致）
-    if os.path.exists(saved_device_file):
+    if saved_device_file and os.path.exists(saved_device_file):
         os.remove(saved_device_file)
     for filename in hilink_cfg_files:
-        onefile = f"{hilink_bridge_path}/config/{filename}"
+        onefile = os.path.join(hilink_config_dir, filename)
         if os.path.exists(onefile):
             os.remove(onefile)
 
@@ -421,10 +468,10 @@ def OnBridgeStatusCB(status):
         if start_work:
             registered_device_ids.clear()
             saved_device_ids.clear()
-            if os.path.exists(saved_device_file):
+            if saved_device_file and os.path.exists(saved_device_file):
                 os.remove(saved_device_file)
             for filename in hilink_cfg_files:
-                onefile = f"{hilink_bridge_path}/config/{filename}"
+                onefile = os.path.join(hilink_config_dir, filename)
                 if os.path.exists(onefile):
                     os.remove(onefile)
             _LOGGER.info("Bridge went offline (devStatus=9) after startup, cleaned persisted files")
@@ -487,13 +534,16 @@ def notify_new_device(hass: HomeAssistant):
     一个 HA device 对应一个 VirtualDevice（一个 SN）。
     """
     # 加载持久化的设备列表
-    if os.path.exists(saved_device_file):
+    if saved_device_file and os.path.exists(saved_device_file):
         with open(saved_device_file, 'r') as f:
             for line in f:
                 device_id = line.strip()
                 if device_id:
                     saved_device_ids.add(device_id)
         _LOGGER.info(f"Loaded {len(saved_device_ids)} saved device IDs")
+    else:
+        _LOGGER.warning(f"saved_device_file is not set (value={saved_device_file}), "
+                        "persisted device list will not be loaded")
 
     # 通过 HA 的 device_registry 和 entity_registry 发现设备
     _discover_and_register_devices(hass)
@@ -586,6 +636,11 @@ def _register_single_device(device_id: str, reuse_sn: str = None, is_update: boo
     
     entity_list = []
     for entry in device_entities:
+        # 跳过来自反向桥接集成（如 huawei_smarthome）的实体，避免循环接入
+        if getattr(entry, "platform", None) in SKIP_PLATFORMS:
+            _LOGGER.debug(f"Skipping entity {entry.entity_id} from platform '{entry.platform}' to avoid bridge loop")
+            continue
+
         state = ghass.states.get(entry.entity_id)
         entity_name = state.name if state and hasattr(state, 'name') else ""
         
@@ -600,6 +655,11 @@ def _register_single_device(device_id: str, reuse_sn: str = None, is_update: boo
             "device_class": device_class,
             "name": entity_name,
         })
+
+    # 过滤后若无可用实体，跳过该设备
+    if not entity_list:
+        _LOGGER.debug(f"Device {device_id} has no eligible entities after platform filter, skipping")
+        return False
 
     # 构建设备信息
     model = device_entry.model or ""
@@ -834,7 +894,7 @@ def _save_device_id(device_id: str):
         saved_device_ids.add(device_id)
         if ghass is not None:
             ghass.loop.run_in_executor(None, _write_device_id_to_file, device_id)
-        else:
+        elif saved_device_file:
             with open(saved_device_file, "a") as f:
                 f.write(device_id + '\n')
 
@@ -842,10 +902,58 @@ def _save_device_id(device_id: str):
 def _write_device_id_to_file(device_id: str):
     """在后台线程中执行文件写入"""
     try:
+        if not saved_device_file:
+            _LOGGER.warning("saved_device_file is not set, cannot persist device_id")
+            return
         with open(saved_device_file, "a") as f:
             f.write(device_id + '\n')
     except Exception as e:
         _LOGGER.error(f"Failed to save device_id {device_id}: {e}")
+
+
+def _load_or_create_ac(device_ac_file: str) -> bytes:
+    """加载或创建 A_C（48字节随机字符串）
+
+    优先从 device_ac 文件读取已保存的 ac，避免每次启动重新生成。
+    如果文件不存在，则生成新的 ac 并保存到文件供下次使用。
+
+    Args:
+        device_ac_file: device_ac 文件路径
+
+    Returns:
+        48 字节的 ac 数据
+    """
+    if os.path.exists(device_ac_file):
+        try:
+            with open(device_ac_file, 'rb') as f:
+                ac = f.read()
+            if len(ac) != 48:
+                _LOGGER.warning(f"device_ac file has invalid ac length {len(ac)}, regenerating")
+                ac = os.urandom(48)
+                _save_ac_to_file(device_ac_file, ac)
+            else:
+                _LOGGER.info("Loaded AC from device_ac file")
+            return ac
+        except Exception as e:
+            _LOGGER.error(f"Failed to load AC from device_ac file: {e}, regenerating")
+            ac = os.urandom(48)
+            _save_ac_to_file(device_ac_file, ac)
+            return ac
+    else:
+        ac = os.urandom(48)
+        _save_ac_to_file(device_ac_file, ac)
+        _LOGGER.info("Generated new AC and saved to device_ac file")
+        return ac
+
+
+def _save_ac_to_file(device_ac_file: str, ac: bytes):
+    """保存 ac 到 device_ac 文件"""
+    try:
+        os.makedirs(os.path.dirname(device_ac_file), exist_ok=True)
+        with open(device_ac_file, 'wb') as f:
+            f.write(ac)
+    except Exception as e:
+        _LOGGER.error(f"Failed to save AC to device_ac file: {e}")
 
 
 def get_network_info() -> dict[str, str]:
