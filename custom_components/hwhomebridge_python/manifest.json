@@ -1,0 +1,15 @@
+{
+  "domain": "hwhomebridge_python",
+  "name": "HiHomeBridge Python",
+  "version": "0.1.0",
+  "config_flow": true,
+  "documentation": "https://github.com/xiasi0/ha_hwhomebridge",
+  "issue_tracker": "https://github.com/xiasi0/ha_hwhomebridge/issues",
+  "requirements": [
+    "cryptography>=42.0.0",
+    "psutil>=5.9.0"
+  ],
+  "iot_class": "cloud_push",
+  "dependencies": [],
+  "codeowners": []
+}

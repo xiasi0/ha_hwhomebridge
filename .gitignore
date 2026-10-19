@@ -1,0 +1,10 @@
+# Track only the pure-Python Home Assistant integration.
+*
+!.gitignore
+!custom_components/
+!custom_components/hwhomebridge_python/
+!custom_components/hwhomebridge_python/**
+
+# Never track Python runtime byproducts inside the tracked integration.
+__pycache__/
+*.py[cod]

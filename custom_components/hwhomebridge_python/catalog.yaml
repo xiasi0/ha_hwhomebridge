@@ -1,0 +1,199 @@
+schema: 1
+
+products:
+  ZG2R:
+    sub_prod_id: "00"
+    device_type: A13
+    manufacturer: "001"
+    model: PCP-OB1116
+    device_name: "智能开关 奥斯陆(无线版) 1键"
+    protocol_type: 6
+    setup_type: 0
+
+  ZG2S:
+    sub_prod_id: "00"
+    device_type: A13
+    manufacturer: "001"
+    model: PCP-OB2116
+    device_name: "智能开关 奥斯陆(无线版) 2键"
+    protocol_type: 6
+    setup_type: 0
+
+  ZG2T:
+    sub_prod_id: "00"
+    device_type: A13
+    manufacturer: "001"
+    model: PCP-OB3106
+    device_name: "智能开关 奥斯陆(无线版) 3键"
+    protocol_type: 6
+    setup_type: 0
+
+  ZG13:
+    sub_prod_id: "00"
+    device_type: A1B
+    manufacturer: "001"
+    model: Adjust Color Lamp
+    device_name: "调光调色智能灯"
+    description: "调光调色灯（开关、亮度、色温）"
+    protocol_type: 100
+    setup_type: 0
+
+  ZG14:
+    sub_prod_id: "00"
+    device_type: A1B
+    manufacturer: "001"
+    model: Dimmable Lamp
+    device_name: "调光智能灯"
+    description: "调光灯（开关、亮度）"
+    protocol_type: 100
+    setup_type: 0
+
+  ZG17:
+    sub_prod_id: "00"
+    device_type: A1E
+    manufacturer: "001"
+    model: Adjust Color Light Belt
+    device_name: "调光调色灯带"
+    description: "调光调色灯带（开关、亮度、色温）"
+    protocol_type: 100
+    setup_type: 0
+
+  ZG2F:
+    sub_prod_id: "01"
+    device_type: A1B
+    manufacturer: "001"
+    model: Adjust Color Pendant Lamp
+    device_name: "调光调色吊灯"
+    description: "调光调色吊灯（开关、亮度、色温）"
+    protocol_type: 5
+    setup_type: 0
+
+  ZG2G:
+    sub_prod_id: "01"
+    device_type: A1B
+    manufacturer: "001"
+    model: Adjust Color Spot Lamp
+    device_name: "调光调色射灯"
+    description: "调光调色射灯（开关、亮度、色温）"
+    protocol_type: 5
+    setup_type: 0
+
+  ZG2H:
+    sub_prod_id: "01"
+    device_type: A1B
+    manufacturer: "001"
+    model: Adjust Color Spotlight
+    device_name: "调光调色筒灯"
+    description: "调光调色筒灯（开关、亮度、色温）"
+    protocol_type: 5
+    setup_type: 0
+
+  ZG2I:
+    sub_prod_id: "01"
+    device_type: A1B
+    manufacturer: "001"
+    model: Adjust Color CeilingLamp
+    device_name: "调光调色吸顶灯"
+    description: "调光调色吸顶灯（开关、亮度、色温）"
+    protocol_type: 5
+    setup_type: 0
+
+  ZG2J:
+    sub_prod_id: "01"
+    device_type: A1B
+    manufacturer: "001"
+    model: Adjust Color Magnetic Lamp
+    device_name: "调光调色磁吸灯"
+    description: "调光调色磁吸灯（开关、亮度、色温）"
+    protocol_type: 5
+    setup_type: 0
+
+  ZG0R:
+    sub_prod_id: "00"
+    device_type: A1A
+    manufacturer: "001"
+    model: Pendant Lamp
+    device_name: "吊灯"
+    description: "单色灯(仅开关)"
+    protocol_type: 100
+    setup_type: 0
+
+  ZG0S:
+    sub_prod_id: "00"
+    device_type: A1B
+    manufacturer: "001"
+    model: Lamp
+    device_name: "智能照明"
+    description: "单色灯(仅开关)"
+    protocol_type: 100
+    setup_type: 0
+
+  ZG0T:
+    sub_prod_id: "00"
+    device_type: A1C
+    manufacturer: "001"
+    model: Sleeping Lamp
+    device_name: "床头灯"
+    description: "单色灯(仅开关)"
+    protocol_type: 100
+    setup_type: 0
+
+  ZG0U:
+    sub_prod_id: "00"
+    device_type: A1D
+    manufacturer: "001"
+    model: Magnetic Suction Lamp
+    device_name: "磁吸灯"
+    description: "单色灯(仅开关)"
+    protocol_type: 100
+    setup_type: 0
+
+  ZG0V:
+    sub_prod_id: "00"
+    device_type: A1E
+    manufacturer: "001"
+    model: Light Belt
+    device_name: "灯带"
+    description: "单色灯(仅开关)"
+    protocol_type: 100
+    setup_type: 0
+
+  ZG0W:
+    sub_prod_id: "00"
+    device_type: A1F
+    manufacturer: "001"
+    model: Spot Lamp
+    device_name: "射灯"
+    description: "单色灯(仅开关)"
+    protocol_type: 100
+    setup_type: 0
+
+  ZG0X:
+    sub_prod_id: "00"
+    device_type: A20
+    manufacturer: "001"
+    model: Spotlight
+    device_name: "筒灯"
+    description: "单色灯(仅开关)"
+    protocol_type: 100
+    setup_type: 0
+
+  ZG0Y:
+    sub_prod_id: "00"
+    device_type: A21
+    manufacturer: "001"
+    model: CeilingLamp
+    device_name: "吸顶灯"
+    description: "单色灯(仅开关)"
+    protocol_type: 100
+    setup_type: 0
+
+  ZG0O:
+    sub_prod_id: "05"
+    device_type: A0E
+    manufacturer: "001"
+    model: BER-LD01
+    device_name: "华为全屋智能 1路 RGBCW 恒压 100W"
+    description: "RGBCW 调光调色照明驱动（开关、亮度、色温、颜色）"
+    protocol_type: 5
+    setup_type: 0

@@ -1,0 +1,116 @@
+# 这是每个网关首次添加时复制到其 .storage 目录的样品配置。
+#
+# 默认关闭。用户确认并编辑后，将 enabled 改为 true 才会加载子设备映射。
+# identity、SN、UDID、devId 和认证材料由运行时生成并持久化，不写入这里。
+# replace 允许动态替换 block 禁用动态替换
+
+schema: 1
+enabled: false
+gateway_serial: ""
+
+children:
+  kitchen_switch:
+    lifecycle:
+      on_product_change: block
+    display:
+      friendly_name: "厨房一键开关"
+      room: "厨房"
+
+    product:
+      ref: ZG0I
+      services:
+        - st: switch
+          sid: switch1
+
+    bindings:
+      - sid: switch1
+        fields:
+          "on":
+            entity_id: switch.test_kitchen_light
+            source: state
+            ha_to_huawei:
+              type: state_map
+              map:
+                "on": 1
+                "off": 0
+            huawei_to_ha:
+              type: state_map
+              map:
+                "0": "off"
+                "1": "on"
+
+  living_room_lamp:
+    lifecycle:
+      on_product_change: block
+    display:
+      friendly_name: "客厅 RGBCW 智能灯"
+      room: "客厅"
+
+    product:
+      ref: ZG0O
+      services:
+        - st: subProduct
+          sid: subProduct
+        - st: switch
+          sid: switch
+        - st: brightness
+          sid: brightness
+        - st: cct
+          sid: cct
+        - st: colour
+          sid: colour
+
+    bindings:
+      - sid: subProduct
+        fields:
+          subProductId:
+            source: constant
+            value: "05"
+
+      - sid: switch
+        fields:
+          "on":
+            entity_id: light.REPLACE_WITH_LIVING_ROOM_LIGHT
+            source: state
+            ha_to_huawei:
+              type: state_map
+              map:
+                "on": 1
+                "off": 0
+            huawei_to_ha:
+              type: state_map
+              map:
+                "0": "off"
+                "1": "on"
+
+      - sid: brightness
+        fields:
+          brightness:
+            entity_id: light.REPLACE_WITH_LIVING_ROOM_LIGHT
+            source: attribute
+            attribute: brightness
+
+      - sid: cct
+        fields:
+          colorTemperature:
+            entity_id: light.REPLACE_WITH_LIVING_ROOM_LIGHT
+            source: attribute
+            attribute: color_temp_kelvin
+
+      - sid: colour
+        fields:
+          red:
+            entity_id: light.REPLACE_WITH_LIVING_ROOM_LIGHT
+            source: attribute
+            attribute: rgb_color
+            component: red
+          green:
+            entity_id: light.REPLACE_WITH_LIVING_ROOM_LIGHT
+            source: attribute
+            attribute: rgb_color
+            component: green
+          blue:
+            entity_id: light.REPLACE_WITH_LIVING_ROOM_LIGHT
+            source: attribute
+            attribute: rgb_color
+            component: blue

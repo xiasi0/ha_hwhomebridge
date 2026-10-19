@@ -1,0 +1,76 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "添加 HiHomeBridge Python 网关",
+        "description": "选择用于华为局域网配对的 IPv4 网卡。配对时请在华为智慧生活中手动输入 8 位 PIN，产品资料由网关发现响应提供。",
+        "data": {
+          "interface_ip": "配对网卡 IPv4 地址"
+        }
+      },
+      "init": {
+        "title": "选择配对网卡",
+        "data": {
+          "interface_ip": "配对网卡 IPv4 地址"
+        }
+      }
+    },
+    "abort": {
+      "no_ipv4_interface": "没有发现可用的 IPv4 网卡。",
+      "already_configured": "此网关已经配置。"
+    },
+    "error": {
+      "mac_not_found": "无法读取所选网卡的 MAC 地址。"
+    }
+  },
+  "device": {
+    "gateway": {
+      "name": "智控网关"
+    }
+  },
+  "entity": {
+    "binary_sensor": {
+      "online": {
+        "name": "在线"
+      }
+    },
+    "button": {
+      "reload_children": {
+        "name": "重载子设备配置"
+      }
+    },
+    "sensor": {
+      "child_count": {
+        "name": "子设备数量",
+        "unit_of_measurement": "个"
+      },
+      "serial": {
+        "name": "网关序列号"
+      }
+    }
+  },
+  "exceptions": {
+    "gateway_limit": {
+      "message": "已达到最多 {limit} 个独立网关实例。"
+    },
+    "mapping_file_unavailable": {
+      "message": "网关映射配置文件不可用。"
+    },
+    "mapping_reload_failed": {
+      "message": "子设备映射配置重载失败：{error}"
+    },
+    "unknown_gateway": {
+      "message": "未知的 HiHomeBridge Python 网关：{serial}"
+    }
+  },
+  "common": {
+    "gateway_limit_title": "HiHomeBridge Python 网关数量超限",
+    "gateway_limit_message": "已达到最多 {limit} 个独立网关实例。请删除一个已有网关后再添加。\n\n{error}",
+    "mapping_not_loaded_title": "HiHomeBridge Python 子设备配置",
+    "mapping_not_loaded_message": "网关 `{serial}` 的子设备配置未加载：\n\n{error}\n\n请修正 mapping.yaml 后点击“重载子设备配置”。",
+    "mapping_not_reloaded_title": "HiHomeBridge Python 子设备配置",
+    "mapping_not_reloaded_message": "网关 `{serial}` 的子设备配置未重载：\n\n{error}\n\n旧配置仍保持运行，请修正 mapping.yaml 后再次重载。",
+    "pairing_title": "HiHomeBridge Python 配对",
+    "pairing_message": "网关 `{serial}` 正在等待配对。\n\nPIN：`{pin}`\n\n请打开华为智慧生活，选择添加网关并手动输入 PIN。\n\n产品资料由网关局域网发现响应提供。"
+  }
+}
